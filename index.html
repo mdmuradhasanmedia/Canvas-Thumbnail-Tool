@@ -116,6 +116,15 @@
     </div>
 
     <div class="group">
+      <label>Show Sub Title</label>
+
+      <select id="showSubtitle">
+        <option value="true">ON</option>
+        <option value="false">OFF</option>
+      </select>
+    </div>
+
+    <div class="group">
       <label>Theme</label>
 
       <select id="theme">
@@ -154,10 +163,6 @@
 
   <div class="actions">
 
-    <button onclick="generateThumbnail()">
-      Generate
-    </button>
-
     <button onclick="downloadThumbnail()">
       Download
     </button>
@@ -173,16 +178,40 @@
 
     let backgroundImage = null;
 
+    // Live Preview Inputs
+
+    const liveInputs = document.querySelectorAll(
+      "input, select"
+    );
+
+    liveInputs.forEach(input => {
+
+      input.addEventListener(
+        "input",
+        generateThumbnail
+      );
+
+      input.addEventListener(
+        "change",
+        generateThumbnail
+      );
+
+    });
+
     // URL Parameters
 
-    const params = new URLSearchParams(window.location.search);
+    const params = new URLSearchParams(
+      window.location.search
+    );
 
     if(params.get("title")){
-      document.getElementById("title").value = params.get("title");
+      document.getElementById("title").value =
+        params.get("title");
     }
 
     if(params.get("subtitle")){
-      document.getElementById("subtitle").value = params.get("subtitle");
+      document.getElementById("subtitle").value =
+        params.get("subtitle");
     }
 
     // Background Upload
@@ -324,6 +353,9 @@
         document.getElementById("subtitle").value ||
         "Professional Design";
 
+      const showSubtitle =
+        document.getElementById("showSubtitle").value === "true";
+
       const theme =
         document.getElementById("theme").value;
 
@@ -333,7 +365,8 @@
       const showCredit =
         document.getElementById("showCredit").value === "true";
 
-      const [primary,secondary] = getTheme(theme);
+      const [primary,secondary] =
+        getTheme(theme);
 
       // Clear
 
@@ -484,16 +517,19 @@
 
       // Subtitle
 
-      ctx.font = "500 34px Poppins";
+      if(showSubtitle){
 
-      ctx.fillStyle =
-        "rgba(255,255,255,0.82)";
+        ctx.font = "500 34px Poppins";
 
-      ctx.fillText(
-        subtitle,
-        120,
-        560
-      );
+        ctx.fillStyle =
+          "rgba(255,255,255,0.82)";
+
+        ctx.fillText(
+          subtitle,
+          120,
+          560
+        );
+      }
 
       // Decorative Circle
 
