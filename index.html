@@ -171,418 +171,453 @@
 
   <canvas id="canvas" width="1280" height="720"></canvas>
 
-  <script>
+ <script>
 
-    const canvas = document.getElementById("canvas");
-    const ctx = canvas.getContext("2d");
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
 
-    let backgroundImage = null;
+let backgroundImage = null;
 
-    // Live Preview Inputs
+// URL Parameters
 
-    const liveInputs = document.querySelectorAll(
-      "input, select"
-    );
+const params = new URLSearchParams(window.location.search);
 
-    liveInputs.forEach(input => {
+// TITLE
 
-      input.addEventListener(
-        "input",
-        generateThumbnail
-      );
+if(params.get("title")){
 
-      input.addEventListener(
-        "change",
-        generateThumbnail
-      );
+  document.getElementById("title").value =
+    params.get("title");
+}
 
-    });
+// SUBTITLE
 
-    // URL Parameters
+if(params.get("subtitle")){
 
-    const params = new URLSearchParams(
-      window.location.search
-    );
+  document.getElementById("subtitle").value =
+    params.get("subtitle");
+}
 
-    if(params.get("title")){
-      document.getElementById("title").value =
-        params.get("title");
+// THEME
+
+if(params.get("theme")){
+
+  document.getElementById("theme").value =
+    params.get("theme");
+}
+
+// CREDIT TEXT
+
+if(params.get("credit")){
+
+  document.getElementById("creditText").value =
+    params.get("credit");
+}
+
+// SHOW CREDIT
+
+if(params.get("showcredit")){
+
+  document.getElementById("showCredit").value =
+    params.get("showcredit");
+}
+
+// SHOW SUBTITLE
+
+if(params.get("showsubtitle")){
+
+  document.getElementById("showSubtitle").value =
+    params.get("showsubtitle");
+}
+
+// LIVE PREVIEW
+
+const liveInputs = document.querySelectorAll(
+  "input, select"
+);
+
+liveInputs.forEach(input => {
+
+  input.addEventListener(
+    "input",
+    generateThumbnail
+  );
+
+  input.addEventListener(
+    "change",
+    generateThumbnail
+  );
+
+});
+
+// BACKGROUND UPLOAD
+
+document
+  .getElementById("bgUpload")
+  .addEventListener("change", function(e){
+
+  const file = e.target.files[0];
+
+  if(!file) return;
+
+  const reader = new FileReader();
+
+  reader.onload = function(event){
+
+    const img = new Image();
+
+    img.onload = function(){
+
+      backgroundImage = img;
+
+      generateThumbnail();
     }
 
-    if(params.get("subtitle")){
-      document.getElementById("subtitle").value =
-        params.get("subtitle");
+    img.src = event.target.result;
+  }
+
+  reader.readAsDataURL(file);
+});
+
+// THEMES
+
+function getTheme(theme){
+
+  const themes = {
+
+    red: ["#ff0033","#440011"],
+    blue: ["#00aaff","#001133"],
+    green: ["#00ff99","#002211"],
+    purple: ["#c300ff","#220033"]
+
+  };
+
+  return themes[theme];
+}
+
+// ROUNDED RECT
+
+function drawRoundedRect(x,y,w,h,r){
+
+  ctx.beginPath();
+
+  ctx.moveTo(x+r,y);
+
+  ctx.lineTo(x+w-r,y);
+
+  ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+
+  ctx.lineTo(x+w,y+h-r);
+
+  ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+
+  ctx.lineTo(x+r,y+h);
+
+  ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+
+  ctx.lineTo(x,y+r);
+
+  ctx.quadraticCurveTo(x,y,x+r,y);
+
+  ctx.closePath();
+}
+
+// AUTO FONT SIZE
+
+function autoFontSize(text,maxWidth){
+
+  let size = 90;
+
+  while(size > 40){
+
+    ctx.font = `800 ${size}px Poppins`;
+
+    if(ctx.measureText(text).width <= maxWidth){
+
+      return size;
     }
 
-    // Background Upload
+    size -= 2;
+  }
 
-    document
-      .getElementById("bgUpload")
-      .addEventListener("change", function(e){
+  return 40;
+}
 
-      const file = e.target.files[0];
+// WRAP TEXT
 
-      if(!file) return;
+function wrapText(text,maxWidth,fontSize){
 
-      const reader = new FileReader();
+  ctx.font = `800 ${fontSize}px Poppins`;
 
-      reader.onload = function(event){
+  const words = text.split(" ");
 
-        const img = new Image();
+  let lines = [];
+  let line = "";
 
-        img.onload = function(){
+  for(let i=0;i<words.length;i++){
 
-          backgroundImage = img;
+    let testLine = line + words[i] + " ";
 
-          generateThumbnail();
-        }
+    let metrics = ctx.measureText(testLine);
 
-        img.src = event.target.result;
-      }
-
-      reader.readAsDataURL(file);
-    });
-
-    // Themes
-
-    function getTheme(theme){
-
-      const themes = {
-
-        red: ["#ff0033","#440011"],
-        blue: ["#00aaff","#001133"],
-        green: ["#00ff99","#002211"],
-        purple: ["#c300ff","#220033"]
-
-      };
-
-      return themes[theme];
-    }
-
-    // Rounded Rectangle
-
-    function drawRoundedRect(x,y,w,h,r){
-
-      ctx.beginPath();
-
-      ctx.moveTo(x+r,y);
-
-      ctx.lineTo(x+w-r,y);
-
-      ctx.quadraticCurveTo(x+w,y,x+w,y+r);
-
-      ctx.lineTo(x+w,y+h-r);
-
-      ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
-
-      ctx.lineTo(x+r,y+h);
-
-      ctx.quadraticCurveTo(x,y+h,x,y+h-r);
-
-      ctx.lineTo(x,y+r);
-
-      ctx.quadraticCurveTo(x,y,x+r,y);
-
-      ctx.closePath();
-    }
-
-    // Auto Font Size
-
-    function autoFontSize(text,maxWidth){
-
-      let size = 90;
-
-      while(size > 40){
-
-        ctx.font = `800 ${size}px Poppins`;
-
-        if(ctx.measureText(text).width <= maxWidth){
-
-          return size;
-        }
-
-        size -= 2;
-      }
-
-      return 40;
-    }
-
-    // Wrap Text
-
-    function wrapText(text,maxWidth,fontSize){
-
-      ctx.font = `800 ${fontSize}px Poppins`;
-
-      const words = text.split(" ");
-
-      let lines = [];
-      let line = "";
-
-      for(let i=0;i<words.length;i++){
-
-        let testLine = line + words[i] + " ";
-
-        let metrics = ctx.measureText(testLine);
-
-        if(metrics.width > maxWidth && i > 0){
-
-          lines.push(line);
-
-          line = words[i] + " ";
-
-        }else{
-
-          line = testLine;
-        }
-      }
+    if(metrics.width > maxWidth && i > 0){
 
       lines.push(line);
 
-      return lines;
+      line = words[i] + " ";
+
+    }else{
+
+      line = testLine;
     }
+  }
 
-    // Generate Thumbnail
+  lines.push(line);
 
-    function generateThumbnail(){
+  return lines;
+}
 
-      const title =
-        document.getElementById("title").value ||
-        "Thumbnail Generator";
+// GENERATE THUMBNAIL
 
-      const subtitle =
-        document.getElementById("subtitle").value ||
-        "Professional Design";
+function generateThumbnail(){
 
-      const showSubtitle =
-        document.getElementById("showSubtitle").value === "true";
+  const title =
+    document.getElementById("title").value ||
+    "Thumbnail Generator";
 
-      const theme =
-        document.getElementById("theme").value;
+  const subtitle =
+    document.getElementById("subtitle").value ||
+    "Professional Design";
 
-      const creditText =
-        document.getElementById("creditText").value;
+  const showSubtitle =
+    document.getElementById("showSubtitle").value === "true";
 
-      const showCredit =
-        document.getElementById("showCredit").value === "true";
+  const theme =
+    document.getElementById("theme").value;
 
-      const [primary,secondary] =
-        getTheme(theme);
+  const creditText =
+    document.getElementById("creditText").value;
 
-      // Clear
+  const showCredit =
+    document.getElementById("showCredit").value === "true";
 
-      ctx.clearRect(
+  const [primary,secondary] =
+    getTheme(theme);
+
+  // CLEAR
+
+  ctx.clearRect(
+    0,
+    0,
+    canvas.width,
+    canvas.height
+  );
+
+  // BACKGROUND
+
+  if(backgroundImage){
+
+    ctx.drawImage(
+      backgroundImage,
+      0,
+      0,
+      canvas.width,
+      canvas.height
+    );
+
+  }else{
+
+    const gradient =
+      ctx.createLinearGradient(
         0,
         0,
         canvas.width,
         canvas.height
       );
 
-      // Background
+    gradient.addColorStop(0,secondary);
+    gradient.addColorStop(1,"#000");
 
-      if(backgroundImage){
+    ctx.fillStyle = gradient;
 
-        ctx.drawImage(
-          backgroundImage,
-          0,
-          0,
-          canvas.width,
-          canvas.height
-        );
+    ctx.fillRect(
+      0,
+      0,
+      canvas.width,
+      canvas.height
+    );
+  }
 
-      }else{
+  // OVERLAY
 
-        const gradient =
-          ctx.createLinearGradient(
-            0,
-            0,
-            canvas.width,
-            canvas.height
-          );
+  ctx.fillStyle = "rgba(0,0,0,0.55)";
 
-        gradient.addColorStop(0,secondary);
-        gradient.addColorStop(1,"#000");
+  ctx.fillRect(
+    0,
+    0,
+    canvas.width,
+    canvas.height
+  );
 
-        ctx.fillStyle = gradient;
+  // GLOW
 
-        ctx.fillRect(
-          0,
-          0,
-          canvas.width,
-          canvas.height
-        );
-      }
+  ctx.fillStyle = primary;
 
-      // Overlay
+  ctx.beginPath();
 
-      ctx.fillStyle = "rgba(0,0,0,0.55)";
+  ctx.arc(
+    1080,
+    120,
+    180,
+    0,
+    Math.PI * 2
+  );
 
-      ctx.fillRect(
-        0,
-        0,
-        canvas.width,
-        canvas.height
-      );
+  ctx.fill();
 
-      // Glow Circle
+  // DARK OVERLAY
 
-      ctx.fillStyle = primary;
+  ctx.fillStyle = "rgba(0,0,0,0.45)";
 
-      ctx.beginPath();
+  ctx.fillRect(
+    0,
+    0,
+    canvas.width,
+    canvas.height
+  );
 
-      ctx.arc(
-        1080,
-        120,
-        180,
-        0,
-        Math.PI * 2
-      );
+  // MAIN BOX
 
-      ctx.fill();
+  drawRoundedRect(
+    60,
+    60,
+    1160,
+    600,
+    30
+  );
 
-      // Dark Overlay
+  ctx.fillStyle = "rgba(255,255,255,0.05)";
 
-      ctx.fillStyle = "rgba(0,0,0,0.45)";
+  ctx.fill();
 
-      ctx.fillRect(
-        0,
-        0,
-        canvas.width,
-        canvas.height
-      );
+  ctx.strokeStyle = "rgba(255,255,255,0.12)";
 
-      // Main Glass Box
+  ctx.lineWidth = 2;
 
-      drawRoundedRect(
-        60,
-        60,
-        1160,
-        600,
-        30
-      );
+  ctx.stroke();
 
-      ctx.fillStyle = "rgba(255,255,255,0.05)";
+  // ACCENT LINE
 
-      ctx.fill();
+  ctx.fillStyle = primary;
 
-      ctx.strokeStyle = "rgba(255,255,255,0.12)";
+  drawRoundedRect(
+    80,
+    100,
+    12,
+    200,
+    12
+  );
 
-      ctx.lineWidth = 2;
+  ctx.fill();
 
-      ctx.stroke();
+  // TITLE
 
-      // Accent Line
+  let fontSize =
+    autoFontSize(title,900);
 
-      ctx.fillStyle = primary;
+  ctx.font =
+    `800 ${fontSize}px Poppins`;
 
-      drawRoundedRect(
-        80,
-        100,
-        12,
-        200,
-        12
-      );
+  ctx.fillStyle = "white";
 
-      ctx.fill();
+  const lines =
+    wrapText(
+      title,
+      900,
+      fontSize
+    );
 
-      // Title
+  let startY = 260;
 
-      let fontSize =
-        autoFontSize(title,900);
+  lines.forEach((line,index)=>{
 
-      ctx.font =
-        `800 ${fontSize}px Poppins`;
+    ctx.fillText(
+      line,
+      120,
+      startY + (
+        index * (fontSize + 10)
+      )
+    );
 
-      ctx.fillStyle = "white";
+  });
 
-      const lines =
-        wrapText(
-          title,
-          900,
-          fontSize
-        );
+  // SUBTITLE
 
-      let startY = 260;
+  if(showSubtitle){
 
-      lines.forEach((line,index)=>{
+    ctx.font = "500 34px Poppins";
 
-        ctx.fillText(
-          line,
-          120,
-          startY + (
-            index * (fontSize + 10)
-          )
-        );
+    ctx.fillStyle =
+      "rgba(255,255,255,0.82)";
 
-      });
+    ctx.fillText(
+      subtitle,
+      120,
+      560
+    );
+  }
 
-      // Subtitle
+  // DECORATIVE CIRCLE
 
-      if(showSubtitle){
+  ctx.beginPath();
 
-        ctx.font = "500 34px Poppins";
+  ctx.arc(
+    1120,
+    580,
+    60,
+    0,
+    Math.PI * 2
+  );
 
-        ctx.fillStyle =
-          "rgba(255,255,255,0.82)";
+  ctx.fillStyle = primary;
 
-        ctx.fillText(
-          subtitle,
-          120,
-          560
-        );
-      }
+  ctx.fill();
 
-      // Decorative Circle
+  // CREDIT
 
-      ctx.beginPath();
+  if(showCredit && creditText.trim() !== ""){
 
-      ctx.arc(
-        1120,
-        580,
-        60,
-        0,
-        Math.PI * 2
-      );
+    ctx.font = "500 20px Poppins";
 
-      ctx.fillStyle = primary;
+    ctx.fillStyle =
+      "rgba(255,255,255,0.55)";
 
-      ctx.fill();
+    ctx.fillText(
+      creditText,
+      850,
+      680
+    );
+  }
 
-      // Credit
+}
 
-      if(showCredit && creditText.trim() !== ""){
+// DOWNLOAD
 
-        ctx.font = "500 20px Poppins";
+function downloadThumbnail(){
 
-        ctx.fillStyle =
-          "rgba(255,255,255,0.55)";
+  const link =
+    document.createElement("a");
 
-        ctx.fillText(
-          creditText,
-          850,
-          680
-        );
-      }
+  link.download = "thumbnail.png";
 
-    }
+  link.href =
+    canvas.toDataURL("image/png");
 
-    // Download
+  link.click();
+}
 
-    function downloadThumbnail(){
+generateThumbnail();
 
-      const link =
-        document.createElement("a");
-
-      link.download = "thumbnail.png";
-
-      link.href =
-        canvas.toDataURL("image/png");
-
-      link.click();
-    }
-
-    generateThumbnail();
-
-  </script>
-
+</script>
 </body>
 </html>
