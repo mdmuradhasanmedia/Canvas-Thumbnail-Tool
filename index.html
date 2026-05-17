@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Advanced Thumbnail Generator</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    *{
+      margin:0;
+      padding:0;
+      box-sizing:border-box;
+    }
+
+    body{
+      background:#0f0f0f;
+      font-family:'Poppins',sans-serif;
+      color:white;
+      min-height:100vh;
+      padding:20px;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:20px;
+    }
+
+    h1{
+      font-size:38px;
+      font-weight:800;
+    }
+
+    .panel{
+      width:100%;
+      max-width:1200px;
+      background:#1b1b1b;
+      border-radius:20px;
+      padding:20px;
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(250px,1fr));
+      gap:15px;
+    }
+
+    .group{
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+    }
+
+    label{
+      font-size:14px;
+      color:#ccc;
+    }
+
+    input,
+    select{
+      padding:14px;
+      border:none;
+      border-radius:12px;
+      background:#2a2a2a;
+      color:white;
+      font-size:15px;
+      outline:none;
+    }
+
+    button{
+      padding:14px 22px;
+      border:none;
+      border-radius:12px;
+      background:white;
+      color:black;
+      font-weight:700;
+      cursor:pointer;
+      font-size:15px;
+      transition:0.2s;
+    }
+
+    button:hover{
+      transform:scale(1.03);
+    }
+
+    .actions{
+      width:100%;
+      max-width:1200px;
+      display:flex;
+      gap:15px;
+      flex-wrap:wrap;
+    }
+
+    canvas{
+      width:100%;
+      max-width:1200px;
+      border-radius:20px;
+      border:1px solid rgba(255,255,255,0.1);
+      background:black;
+    }
+
+    .footer{
+      opacity:0.6;
+      font-size:14px;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>🔥 Advanced Thumbnail Generator</h1>
+
+  <div class="panel">
+
+    <div class="group">
+      <label>Thumbnail Title</label>
+      <input type="text" id="title" placeholder="Enter thumbnail title">
+    </div>
+
+    <div class="group">
+      <label>Sub Title</label>
+      <input type="text" id="subtitle" placeholder="Enter subtitle">
+    </div>
+
+    <div class="group">
+      <label>Theme</label>
+      <select id="theme">
+        <option value="red">Red</option>
+        <option value="blue">Blue</option>
+        <option value="green">Green</option>
+        <option value="purple">Purple</option>
+      </select>
+    </div>
+
+    <div class="group">
+      <label>Upload Background</label>
+      <input type="file" id="bgUpload" accept="image/*">
+    </div>
+
+  </div>
+
+  <div class="actions">
+    <button onclick="generateThumbnail()">🚀 Generate</button>
+    <button onclick="downloadThumbnail()">⬇ Download</button>
+  </div>
+
+  <canvas id="canvas" width="1280" height="720"></canvas>
+
+  <div class="footer">
+    GitHub Pages Ready • No Server Needed
+  </div>
+
+  <script>
+
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
+
+    let backgroundImage = null;
+
+    // URL Parameter Support
+    const urlParams = new URLSearchParams(window.location.search);
+
+    if(urlParams.get("title")){
+      document.getElementById("title").value = urlParams.get("title");
+    }
+
+    if(urlParams.get("subtitle")){
+      document.getElementById("subtitle").value = urlParams.get("subtitle");
+    }
+
+    // Background Upload
+    document.getElementById("bgUpload").addEventListener("change", function(e){
+
+      const file = e.target.files[0];
+
+      if(!file) return;
+
+      const reader = new FileReader();
+
+      reader.onload = function(event){
+
+        const img = new Image();
+
+        img.onload = function(){
+          backgroundImage = img;
+          generateThumbnail();
+        }
+
+        img.src = event.target.result;
+      }
+
+      reader.readAsDataURL(file);
+    });
+
+    function getTheme(theme){
+
+      const themes = {
+
+        red: ["#ff0033","#440011"],
+        blue: ["#00aaff","#001133"],
+        green: ["#00ff99","#002211"],
+        purple: ["#c300ff","#220033"]
+
+      };
+
+      return themes[theme];
+    }
+
+    function wrapText(text, maxWidth, fontSize){
+
+      ctx.font = `800 ${fontSize}px Poppins`;
+
+      const words = text.split(" ");
+
+      let lines = [];
+      let line = "";
+
+      for(let n=0;n<words.length;n++){
+
+        let testLine = line + words[n] + " ";
+        let metrics = ctx.measureText(testLine);
+
+        if(metrics.width > maxWidth && n > 0){
+
+          lines.push(line);
+          line = words[n] + " ";
+
+        }else{
+
+          line = testLine;
+
+        }
+      }
+
+      lines.push(line);
+
+      return lines;
+    }
+
+    function autoFontSize(text, maxWidth){
+
+      let size = 90;
+
+      while(size > 40){
+
+        ctx.font = `800 ${size}px Poppins`;
+
+        if(ctx.measureText(text).width <= maxWidth){
+          return size;
+        }
+
+        size -= 2;
+      }
+
+      return 40;
+    }
+
+    function drawRoundedRect(x,y,w,h,r){
+
+      ctx.beginPath();
+
+      ctx.moveTo(x+r,y);
+      ctx.lineTo(x+w-r,y);
+      ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+      ctx.lineTo(x+w,y+h-r);
+      ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+      ctx.lineTo(x+r,y+h);
+      ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+      ctx.lineTo(x,y+r);
+      ctx.quadraticCurveTo(x,y,x+r,y);
+
+      ctx.closePath();
+    }
+
+    function generateThumbnail(){
+
+      const title =
+        document.getElementById("title").value ||
+        "Advanced Thumbnail Generator";
+
+      const subtitle =
+        document.getElementById("subtitle").value ||
+        "GitHub Pages Ready";
+
+      const theme = document.getElementById("theme").value;
+
+      const [primary, secondary] = getTheme(theme);
+
+      // Clear
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+
+      // Background
+      if(backgroundImage){
+
+        ctx.drawImage(backgroundImage,0,0,canvas.width,canvas.height);
+
+      }else{
+
+        const gradient = ctx.createLinearGradient(
+          0,
+          0,
+          canvas.width,
+          canvas.height
+        );
+
+        gradient.addColorStop(0, secondary);
+        gradient.addColorStop(1, "#000");
+
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0,0,canvas.width,canvas.height);
+      }
+
+      // Overlay
+      ctx.fillStyle = "rgba(0,0,0,0.55)";
+      ctx.fillRect(0,0,canvas.width,canvas.height);
+
+      // Glow
+      ctx.fillStyle = primary;
+
+      ctx.beginPath();
+      ctx.arc(1080,120,180,0,Math.PI*2);
+      ctx.fill();
+
+      // Dark overlay
+      ctx.fillStyle = "rgba(0,0,0,0.45)";
+      ctx.fillRect(0,0,canvas.width,canvas.height);
+
+      // Glass Box
+      drawRoundedRect(60,60,1160,600,30);
+
+      ctx.fillStyle = "rgba(255,255,255,0.05)";
+      ctx.fill();
+
+      ctx.strokeStyle = "rgba(255,255,255,0.12)";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // Accent line
+      ctx.fillStyle = primary;
+      drawRoundedRect(80,90,12,200,12);
+      ctx.fill();
+
+      // Badge
+      drawRoundedRect(100,90,180,55,15);
+
+      ctx.fillStyle = primary;
+      ctx.fill();
+
+      ctx.fillStyle = "white";
+      ctx.font = "700 24px Poppins";
+      ctx.fillText("TRENDING",130,126);
+
+      // Title
+      let fontSize = autoFontSize(title, 900);
+
+      ctx.font = `800 ${fontSize}px Poppins`;
+      ctx.fillStyle = "white";
+
+      const lines = wrapText(title, 900, fontSize);
+
+      let startY = 290;
+
+      lines.forEach((line,index)=>{
+
+        ctx.fillText(
+          line,
+          110,
+          startY + (index * (fontSize + 10))
+        );
+
+      });
+
+      // Subtitle
+      ctx.font = "500 34px Poppins";
+      ctx.fillStyle = "rgba(255,255,255,0.8)";
+
+      ctx.fillText(
+        subtitle,
+        110,
+        560
+      );
+
+      // Decorative circle
+      ctx.beginPath();
+      ctx.arc(1120,580,60,0,Math.PI*2);
+
+      ctx.fillStyle = primary;
+      ctx.fill();
+
+      // Footer
+      ctx.font = "500 20px Poppins";
+      ctx.fillStyle = "rgba(255,255,255,0.55)";
+
+      ctx.fillText(
+        "Generated by BanglaTrick",
+        920,
+        680
+      );
+    }
+
+    function downloadThumbnail(){
+
+      const link = document.createElement("a");
+
+      link.download = "thumbnail.png";
+      link.href = canvas.toDataURL("image/png");
+
+      link.click();
+    }
+
+    generateThumbnail();
+
+  </script>
+
+</body>
+</html>
